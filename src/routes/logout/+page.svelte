@@ -4,10 +4,7 @@
 
     function logout(){
         fetch("/account/logout", {
-            method: "POST",
-            body: {
-
-            }
+            method: "POST"
         });
     }
 </script>

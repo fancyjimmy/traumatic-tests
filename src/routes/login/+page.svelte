@@ -13,7 +13,13 @@
         })
             .then(res => res.json())
             .then(user => {
-                $page.data.user = user
+                console.log(user);
+                console.log($page.data.user);
+                try{
+                    $page.data.user = user
+                } catch (e){
+                    console.warn(e)
+                }
             });
     }
 </script>

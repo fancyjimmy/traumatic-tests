@@ -2,6 +2,7 @@
     <div><a href="/"></a></div>
     <div><a href="/login">Login</a></div>
     <div><a href="/register">Registrieren</a></div>
+    <div><a href="/logout">Logout</a></div>
     <div><a href="/subject">Fächer</a></div>
 </nav>
 <slot></slot>
