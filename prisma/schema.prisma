@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(uuid())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  username      String      @unique
+  passwordHash  String
+  tests         Test[]      @relation(name: "testsOfUser")
+  userRole      UserRole?   @relation(name: "userRole")
+  session       Session?    @relation(name: "userSession")
+  userRolesGiven UserRole[] @relation(name: "rolesGiven")
+}
+
+model Session{
+user            User        @relation(name: "userSession", fields: [userId], references:[id])
+userId          String      @unique @id
+userAuthToken   String?     @unique @default(cuid())
+creationTime    DateTime    @updatedAt
+duration        BigInt         // duration in Seconds
+}
+
+model Subject {
+id              Int         @id @default(autoincrement())
+name            String      @unique
+abbreviation    String
+tests           Test[]      @relation(name: "testsOfSubject")
+}
+
+model Test {
+id          Int         @id @default(autoincrement())
+subject     Subject     @relation(name: "testsOfSubject", fields: [subjectId], references: [id])
+subjectId   Int
+poster      User?       @relation(name: "testsOfUser", fields: [userId], references: [id])
+userId      String?
+createdAt   DateTime    @default(now())
+grade       Int         // Schuljahr
+count       Int?        // wie vielte Test des Schuljahrs
+teacher     Teacher?    @relation(name: "testsOfTeacher", fields: [teacherId], references: [id])
+teacherId   Int
+fileName    String      // relativ von Pfad und ohne suffix -> immer png
+}
+
+model Teacher {
+id              Int         @id @default(autoincrement())
+firstname       String?
+lastname        String
+abbreviation    String      // kürzel e.g. refr
+test            Test[]      @relation(name: "testsOfTeacher")
+}
+
+model Role {
+id          Int         @id @default(autoincrement())
+name        String      @unique
+users       UserRole[]  @relation(name: "usersWithRole")
+}
+
+model UserRole {
+user        User        @relation(name: "userRole", fields: [userId], references: [id])
+userId      String      @unique
+role        Role        @relation(name: "usersWithRole", fields: [roleId], references: [id])
+roleId      Int
+roleGiver   User?       @relation(name: "rolesGiven", fields: [roleGiverId], references: [id])
+roleGiverId String?
+createdAt   DateTime    @default(now())
+
+@@id([userId, roleId])
+}
