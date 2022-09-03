@@ -5,7 +5,9 @@ import {error, redirect} from "@sveltejs/kit";
 import {isEmpty} from "../../lib/util";
 
 export const load: PageServerLoad = async ({request, params, locals}) => {
-    redirect(301, "/login")
+    if(!locals.user?.userId){
+        throw redirect(301, "/login")
+    }
 
     const subjects = await db.subject.findMany()
     if (subjects) {

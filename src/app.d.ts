@@ -10,7 +10,7 @@ type User = {
 
 declare namespace App {
 	interface Locals {
-        user: User
+        user: User | null
     }
 
 	interface PageData {

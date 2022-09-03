@@ -1,19 +1,32 @@
-import type {RequestHandler} from "@sveltejs/kit";
-import {isEmpty, matchesPasswordStandard} from "$lib/util";
-import {error} from "@sveltejs/kit";
-import {db} from "$lib/database";
+import type { PageServerLoad } from './$types';
+import { redirect, type Action } from "@sveltejs/kit";
+import { isEmpty, matchesPasswordStandard } from "$lib/util";
+import { error } from "@sveltejs/kit";
+import { db } from "$lib/database";
 import bcrypt from "bcrypt";
 import cuid from "cuid";
 
 import cookie from "cookie";
 
-const TIME_OUT : number = 10_800; // 3 hours in seconds
+const TIME_OUT: number = 10_800; // 3 hours in seconds
 
-export const POST: RequestHandler = async({request, setHeaders}) => {
+export const load: PageServerLoad = async ({locals}) => {
+    if(locals.user){
+        throw redirect(300, "/logout");
+    }
+}
+ 
+export const POST: Action = async ({ request, setHeaders, locals}) => {
+    if(locals.user){
+        return {
+            status: 300,
+            location: "/logout"
+        }
+    }
 
     const data = await request.json()
 
-    let {username, password} = data
+    let { username, password } = data
     let [usersWithSameName] = await Promise.all([db.user.findFirst({
         where: {
             username: {
@@ -22,14 +35,20 @@ export const POST: RequestHandler = async({request, setHeaders}) => {
         }
     })])
 
-    if (!usersWithSameName){
-        throw error(404, "no user with given username")
+    if (!usersWithSameName) {
+        return {
+            status: 404,
+            errors: {reason: "no user with given username"}
+        }
     }
 
     const passwordMatches = await bcrypt.compare(password, usersWithSameName.passwordHash)
 
-    if (!passwordMatches){
-        throw error(400, "wrong password")
+    if (!passwordMatches) {
+        return {
+            status: 400,
+            errors: {reason: "wrong password"}
+        }
     }
 
     let authToken = cuid()
@@ -50,9 +69,9 @@ export const POST: RequestHandler = async({request, setHeaders}) => {
         include: {
             user: {
                 include: {
-                    userRole:{
+                    userRole: {
                         include: {
-                            role : true
+                            role: true
                         }
                     }
                 }
@@ -61,13 +80,13 @@ export const POST: RequestHandler = async({request, setHeaders}) => {
     })
 
     setHeaders({
-        'set-cookie': cookie.serialize("session", authToken, {maxAge: TIME_OUT, path: "/"})
+        'set-cookie': cookie.serialize("session", authToken, { maxAge: TIME_OUT, path: "/" })
     })
 
     let user = {}
     if (session) {
         let role = null
-        if (session.user.userRole){
+        if (session.user.userRole) {
             role = session.user.userRole.role.name
         }
         user = {
@@ -76,7 +95,12 @@ export const POST: RequestHandler = async({request, setHeaders}) => {
             userRole: role,
             session: session.userAuthToken
         }
+        return { status: 200, location: "/"};
     }
 
-    return new Response(JSON.stringify(user), {status: 200, statusText: "successfully logged in"})
+    return {
+        status: 500,
+        errors: {reason: "Session wasn't created successfully"}
+    }
+
 }
