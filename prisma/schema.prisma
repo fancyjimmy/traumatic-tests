@@ -11,68 +11,115 @@ datasource db {
 }
 
 model User {
-  id            String      @id @default(uuid())
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  username      String      @unique
-  passwordHash  String
-  tests         Test[]      @relation(name: "testsOfUser")
-  userRole      UserRole?   @relation(name: "userRole")
-  session       Session?    @relation(name: "userSession")
-  userRolesGiven UserRole[] @relation(name: "rolesGiven")
+  id             String        @id @default(uuid())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  username       String        @unique
+  passwordHash   String
+  tests          Test[]        @relation(name: "testsOfUser")
+  userRole       UserRole?     @relation(name: "userRole")
+  session        Session?      @relation(name: "userSession")
+  userRolesGiven UserRole[]    @relation(name: "rolesGiven")
+  roleRequests   RoleRequest?  @relation(name: "userRoleRequest")
 }
 
-model Session{
-user            User        @relation(name: "userSession", fields: [userId], references:[id])
-userId          String      @unique @id
-userAuthToken   String?     @unique @default(cuid())
-creationTime    DateTime    @updatedAt
-duration        BigInt         // duration in Seconds
+model Session {
+  user          User     @relation(name: "userSession", fields: [userId], references: [id])
+  userId        String   @id @unique
+  userAuthToken String?  @unique @default(cuid())
+  creationTime  DateTime @updatedAt
+  duration      BigInt // duration in Seconds
 }
 
 model Subject {
-id              Int         @id @default(autoincrement())
-name            String      @unique
-abbreviation    String
-tests           Test[]      @relation(name: "testsOfSubject")
+  id           Int    @id @default(autoincrement())
+  name         String @unique
+  abbreviation String
+  tests        Test[] @relation(name: "testsOfSubject")
 }
 
 model Test {
-id          Int         @id @default(autoincrement())
-subject     Subject     @relation(name: "testsOfSubject", fields: [subjectId], references: [id])
-subjectId   Int
-poster      User?       @relation(name: "testsOfUser", fields: [userId], references: [id])
-userId      String?
-createdAt   DateTime    @default(now())
-grade       Int         // Schuljahr
-count       Int?        // wie vielte Test des Schuljahrs
-teacher     Teacher?    @relation(name: "testsOfTeacher", fields: [teacherId], references: [id])
-teacherId   Int
-fileName    String      // relativ von Pfad und ohne suffix -> immer png
+  id            Int        @id @default(autoincrement())
+  subject       Subject    @relation(name: "testsOfSubject", fields: [subjectId], references: [id])
+  subjectId     Int
+  poster        User?      @relation(name: "testsOfUser", fields: [userId], references: [id])
+  userId        String?
+  createdAt     DateTime   @default(now())
+  testYear      Int? // Jahr
+  testLevel     Int // 1 - 5
+  testLevelName String? // a - c
+  count         Int? // wie vielte Test des Schuljahrs
+  teacher       Teacher?   @relation(name: "testsOfTeacher", fields: [teacherId], references: [id])
+  teacherId     Int
+  type          TestType   @relation(name: "testType", fields: [testType], references: [abbr])
+  testType      String
+  testFiles     TestFile[] @relation(name: "testFile") // relativ von Pfad und ohne suffix -> immer png
+}
+
+model TestFile {
+  test         Test   @relation(name: "testFile", fields: [testId], references: [id])
+  testId       Int
+  testFileName String
+
+  @@id([testId, testFileName])
+}
+
+model Grade {
+  year         Int // 20XX -> Schulanfangsjahr; 2021/22 -> 2021
+  name         String // a, b, c
+  users        UserRole[]    @relation(name: "userGrade")
+  roleRequests RoleRequest[] @relation(name: "roleRequestGrade")
+
+  @@id([year, name])
+}
+
+model TestType {
+  abbr  String @id @unique
+  name  String
+  tests Test[] @relation(name: "testType")
 }
 
 model Teacher {
-id              Int         @id @default(autoincrement())
-firstname       String?
-lastname        String
-abbreviation    String      // kürzel e.g. refr
-test            Test[]      @relation(name: "testsOfTeacher")
+  id           Int     @id @default(autoincrement())
+  firstname    String?
+  lastname     String
+  abbreviation String // kürzel e.g. refr
+  test         Test[]  @relation(name: "testsOfTeacher")
 }
 
 model Role {
-id          Int         @id @default(autoincrement())
-name        String      @unique
-users       UserRole[]  @relation(name: "usersWithRole")
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  users        UserRole[]    @relation(name: "usersWithRole")
+  roleRequests RoleRequest[] @relation(name: "roleRequestRole")
 }
 
 model UserRole {
-user        User        @relation(name: "userRole", fields: [userId], references: [id])
-userId      String      @unique
-role        Role        @relation(name: "usersWithRole", fields: [roleId], references: [id])
-roleId      Int
-roleGiver   User?       @relation(name: "rolesGiven", fields: [roleGiverId], references: [id])
-roleGiverId String?
-createdAt   DateTime    @default(now())
+  user        User     @relation(name: "userRole", fields: [userId], references: [id])
+  userId      String   @unique
+  role        Role     @relation(name: "usersWithRole", fields: [roleId], references: [id])
+  roleId      Int
+  roleGiver   User?    @relation(name: "rolesGiven", fields: [roleGiverId], references: [id])
+  roleGiverId String?
+  createdAt   DateTime @default(now())
 
-@@id([userId, roleId])
+  gradeYear Int
+  gradeName String
+  grade     Grade  @relation(name: "userGrade", fields: [gradeYear, gradeName], references: [year, name])
+
+  @@id([userId, roleId])
+}
+
+model RoleRequest {
+  createdAt DateTime @default(now())
+  user      User     @relation(name: "userRoleRequest", fields: [userId], references: [id])
+  userId    String   @unique
+  role      Role     @relation(name: "roleRequestRole", fields: [roleId], references: [id])
+  roleId    Int
+  gradeYear Int
+  gradeName String
+  accepted  Boolean? // false -> rejected, true -> accepted, null -> not seen 
+  grade     Grade    @relation(name: "roleRequestGrade", fields: [gradeName, gradeYear], references: [name, year])
+
+  @@id([userId, roleId, gradeYear, gradeName])
 }
