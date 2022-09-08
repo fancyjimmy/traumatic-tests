@@ -3,6 +3,7 @@ import { redirect, type Action } from "@sveltejs/kit";
 import { isEmpty, matchesPasswordStandard } from "$lib/util";
 import { error } from "@sveltejs/kit";
 import { db } from "$lib/database";
+import { grades, gradeNames } from "$lib/values";
 import bcrypt from "bcrypt";
 import cuid from "cuid";
 
@@ -10,14 +11,16 @@ import cookie from "cookie";
 
 const TIME_OUT: number = 10_800; // 3 hours in seconds
 
-export const load: PageServerLoad = async ({locals}) => {
-    if(locals.user){
+export const load: PageServerLoad = async ({ locals }) => {
+    if (locals.user) {
         throw redirect(300, "/logout");
     }
+
+
 }
- 
-export const POST: Action = async ({ request, setHeaders, locals}) => {
-    if(locals.user){
+
+export const POST: Action = async ({ request, setHeaders, locals }) => {
+    if (locals.user) {
         return {
             status: 300,
             location: "/logout"
@@ -27,19 +30,19 @@ export const POST: Action = async ({ request, setHeaders, locals}) => {
     const data = await request.json()
 
     let { username, password } = data
-  
 
-    if (isEmpty(username) || isEmpty(password)){
-        return{
+
+    if (isEmpty(username) || isEmpty(password)) {
+        return {
             status: 455,
-            errors: "username and password can't be empty"
+            errors: { reason: "username and password can't be empty" }
         }
     }
 
-    if (!matchesPasswordStandard(password)){
+    if (!matchesPasswordStandard(password)) {
         return {
             status: 456,
-            errors: "password doesn't meet minimum requirements"
+            errors: { reason: "password doesn't meet minimum requirements" }
         }
     }
 
@@ -51,10 +54,10 @@ export const POST: Action = async ({ request, setHeaders, locals}) => {
         }
     })
 
-    if (usersWithSameName != null){
+    if (usersWithSameName != null) {
         return {
             status: 409,
-            errors: "username is already used"
+            errors: { reason: "username is already used" }
         }
     }
 
@@ -63,13 +66,13 @@ export const POST: Action = async ({ request, setHeaders, locals}) => {
     let user = await db.user.create({
         data: {
             username,
-            passwordHash: hash
+            passwordHash: hash,
         }
     });
 
-    if(user){
+    if (user) {
         return {
-            status: 201, 
+            status: 201,
             location: "/"
         }
     }

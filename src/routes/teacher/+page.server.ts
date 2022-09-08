@@ -9,10 +9,10 @@ export const load: PageServerLoad = async ({request, params, locals}) => {
         throw redirect(301, "/login")
     }
 
-    const subjects = await db.subject.findMany()
-    if (subjects) {
-        return {subjects}
+    const teachers = await db.teacher.findMany()
+    if (teachers) {
+        return {teachers}
     }
 
-    throw error(404, "subject not found")
+    throw error(404, "teachers not found")
 }

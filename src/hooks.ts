@@ -3,6 +3,7 @@ import { sequence } from '@sveltejs/kit/hooks'
 import * as cookie from 'cookie'
 
 import { db } from '$lib/database'
+import type { UserRole } from '@prisma/client'
 
 
 const session: Handle = async ({ event, resolve }) => {
@@ -32,10 +33,18 @@ const session: Handle = async ({ event, resolve }) => {
     })
 
     if (session) {
-        let role = null
-        if (session.user.userRole) {
-            role = session.user.userRole.role.name
+        let role: Role | null = null;
+
+        if(session.user.userRole){
+            role = {
+                name: session.user.userRole.role.name,
+                grade: {
+                    year: session.user.userRole.gradeYear,
+                    name: session.user.userRole.gradeName,
+                }
+            }
         }
+
         let user = {
             username: session.user.username,
             userId: session.user.id,
@@ -58,7 +67,7 @@ const authGuardProducer = (role: string, paths: string[]): Handle => {
                 if (event.locals.user && event.locals.user.userRole === role) {
                     return await resolve(event)
                 } else {
-                    return Response.redirect(`${event.url.origin}/login`, 300); 
+                    return Response.redirect(`${event.url.origin}/login`, 300);
                 }
             }
         }
@@ -70,7 +79,7 @@ const authGuardProducer = (role: string, paths: string[]): Handle => {
 
 const loginRedirect: Handle = async ({ event, resolve }) => {
     if (event.locals.user?.session && event.url.pathname == "\login") {
-        return Response.redirect(`${event.url.origin}/logout`, 300); 
+        return Response.redirect(`${event.url.origin}/logout`, 300);
     }
 
     return await resolve(event)

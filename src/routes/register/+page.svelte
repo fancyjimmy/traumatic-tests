@@ -2,7 +2,7 @@
 import { goto } from "$app/navigation";
 
   import { matchesPasswordStandard } from "$lib/util";
-
+import type { PageData } from "./$types";
   let username: string;
   let password: string;
   let passwordCopy: string;
@@ -30,7 +30,7 @@ import { goto } from "$app/navigation";
       method: "POST",
       body: JSON.stringify({
         username,
-        password,
+        password
       }),
     })
       .then((res) => {
@@ -49,12 +49,14 @@ import { goto } from "$app/navigation";
           error = reason
       });
   }
+
+  export let data: PageData;
 </script>
 
 <div style="display: flex; flex-direction: column; width: 20%">
-  <input type="text" bind:value={username} />
-  <input type="password" bind:value={password} />
-  <input type="password" bind:value={passwordCopy} />
+  <input type="text" bind:value={username} placeholder="Username" />
+  <input type="password" bind:value={password} placeholder="Passwort"/>
+  <input type="password" bind:value={passwordCopy} placeholder="Passwort Wiederholung" />
 </div>
 
 {#if error}

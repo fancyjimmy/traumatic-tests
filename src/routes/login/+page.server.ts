@@ -79,22 +79,13 @@ export const POST: Action = async ({ request, setHeaders, locals}) => {
         }
     })
 
-    setHeaders({
-        'set-cookie': cookie.serialize("session", authToken, { maxAge: TIME_OUT, path: "/" })
-    })
 
-    let user = {}
+
     if (session) {
-        let role = null
-        if (session.user.userRole) {
-            role = session.user.userRole.role.name
-        }
-        user = {
-            username: session.user.username,
-            userId: session.user.id,
-            userRole: role,
-            session: session.userAuthToken
-        }
+        setHeaders({
+            'set-cookie': cookie.serialize("session", authToken, { maxAge: TIME_OUT, path: "/" })
+        })
+     
         return { status: 200, location: "/"};
     }
 

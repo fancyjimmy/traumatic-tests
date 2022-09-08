@@ -13,10 +13,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 }
 
 export const POST: Action = async ({ locals }) => {
-    if (!locals.user?.userId) {
+    if (!locals.user) {
         return {
             status: 400,
-            errors: "No User Found"
+            errors: {message: "No User Found"}
         }
     }
 
